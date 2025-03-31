@@ -1,1 +1,21 @@
-***/.venv
+# Folder Ignores Keyword
+**/*-ignore/
+
+# Python virutal environment
+**/.venv/
+
+# VS Code Settings
+**/.vscode/
+
+# Python binarys
+**/__pycache__/
+
+# temp folders from fetch()
+**/tmp/*
+
+# Archives
+*.zip
+*.Zip
+
+# API Keys
+**/api_key*
