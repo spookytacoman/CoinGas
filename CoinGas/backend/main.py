@@ -15,11 +15,11 @@
 # curl http://localhost:8000
 # curl http://localhost:8000/docs
 
-from typing import Dict, Any, Union
-from fastapi import FastAPI, HTTPException
+# from typing import Dict, Any, Union
+# from fastapi import FastAPI, HTTPException
 
-app:FastAPI = FastAPI()
+# app:FastAPI = FastAPI()
 
-@app.get("/")
-def read_root() -> Dict[str, str]:
-    return {"message": "Hello, FastAPI World!"}
+# @app.get("/")
+# def read_root() -> Dict[str, str]:
+#     return {"message": "Hello, FastAPI World!"}
