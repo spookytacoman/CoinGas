@@ -1,5 +1,5 @@
 ### Install Dependencies
-1. `cd` into this dir
+1. `cd` into root dir
 2. Ensure `poetry config virtualenvs.in-project true`
 3. `poetry install`
 4. `cd ./CoinGas/frontend/`
