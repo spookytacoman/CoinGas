@@ -16,7 +16,7 @@
 # curl http://localhost:8000/docs
 
 from typing import Dict, Any, Union
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from datetime import datetime
@@ -118,10 +118,18 @@ async def websocket_endpoint(websocket: WebSocket):
             
             # Wait for 5 seconds before sending the next update
             await asyncio.sleep(5)
+    
+    except WebSocketDisconnect:
+        print("Client disconnected")
+    
     except Exception as e:
         print(f"WebSocket error: {e}")
+        
     finally:
-        await websocket.close()
+        try:
+            await websocket.close()
+        except:
+            pass  # Ignore errors when trying to close an already closed connection
 
 @app.get("/")
 def read_root():
