@@ -1,0 +1,79 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 15%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --radius: 1rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .card-gradient-bitcoin {
+    @apply bg-gradient-to-br from-card to-bitcoin/10;
+  }
+  
+  .card-gradient-ethereum {
+    @apply bg-gradient-to-br from-card to-ethereum/10;
+  }
+  
+  .card-gradient-solana {
+    @apply bg-gradient-to-br from-card to-solana/10;
+  }
+  
+  .card-gradient-polygon {
+    @apply bg-gradient-to-br from-card to-polygon/10;
+  }
+  
+  .card-gradient-avalanche {
+    @apply bg-gradient-to-br from-card to-avalanche/10;
+  }
+  
+  .card-gradient-binance {
+    @apply bg-gradient-to-br from-card to-binance/10;
+  }
+  
+  .card-gradient-cardano {
+    @apply bg-gradient-to-br from-card to-cardano/10;
+  }
+  
+  .card-gradient-polkadot {
+    @apply bg-gradient-to-br from-card to-polkadot/10;
+  }
+}
