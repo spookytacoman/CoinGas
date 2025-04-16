@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { connectToGasWebSocket, disconnectFromGasWebSocket } from '@/services/gasService';
 import { GasFee } from '@/types/gas';
 import GasCard from './GasCard';
@@ -15,29 +15,45 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const handleGasData = useCallback((data: GasFee[]) => {
+    setGasFees(data);
+    setError(null);
+    setLoading(false);
+  }, []);
+
+  const handleError = useCallback((errorMessage: string) => {
+    console.error('WebSocket error:', errorMessage);
+    setError(errorMessage);
+    setLoading(false);
+    toast.error('Could not load gas fees', {
+      description: 'Please try refreshing the page'
+    });
+  }, []);
+
   useEffect(() => {
-    setLoading(true);
-    
-    connectToGasWebSocket(
-      (data) => {
-        setGasFees(data);
-        setError(null);
-        setLoading(false);
-      },
-      (errorMessage) => {
-        console.error('WebSocket error:', errorMessage);
-        setError(errorMessage);
-        setLoading(false);
-        toast.error('Could not load gas fees', {
-          description: 'Please try refreshing the page'
-        });
+    let mounted = true;
+
+    const setupWebSocket = async () => {
+      if (!mounted) return;
+      
+      try {
+        setLoading(true);
+        await connectToGasWebSocket(handleGasData, handleError);
+      } catch (error) {
+        console.error('Error setting up WebSocket:', error);
+        if (mounted) {
+          handleError('Failed to connect to gas fee service');
+        }
       }
-    );
+    };
+
+    setupWebSocket();
 
     return () => {
-      disconnectFromGasWebSocket();
+      mounted = false;
+      disconnectFromGasWebSocket().catch(console.error);
     };
-  }, []);
+  }, [handleGasData, handleError]);
 
   // Separate main cryptocurrencies (BTC, ETH, SOL) from the others
   const mainCryptos = gasFees.filter(fee => 
