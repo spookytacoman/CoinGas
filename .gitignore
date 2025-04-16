@@ -24,7 +24,6 @@
 
 # API Keys
 **/api_key*
-*.env
 .env.local
 .env.development.local
 .env.test.local
