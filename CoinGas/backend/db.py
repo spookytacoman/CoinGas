@@ -66,7 +66,7 @@ def get_gas_collection():
             
             if mongo_client is None:
                 logger.error("❌ MongoDB collection error: Could not get MongoDB client")
-                return MockCollection()
+                # return MockCollection()
             
             # Get the database and collection
             db = mongo_client[mongo_db]
@@ -78,8 +78,7 @@ def get_gas_collection():
             
         except Exception as e:
             logger.error(f"❌ MongoDB collection error: {e}")
-            logger.info("Using mock data instead")
-            return MockCollection()
+            # return MockCollection()
     
     return gas_collection
 

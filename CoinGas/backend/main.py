@@ -22,6 +22,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketState
 from datetime import datetime, timedelta
+# from pymongo.synchronous.cursor import Cursor
 import asyncio
 import logging
 
@@ -210,11 +211,18 @@ def get_network_history(network: str, limit: int = 100) -> List[Dict[str, Any]]:
         raise HTTPException(status_code=400, detail=f"Invalid network. Must be one of: {', '.join(fee_fields.keys())}")
 
     high_field, medium_field, low_field = fee_fields[network]
-
-    history = list(gas_collection.find(
+    
+    # logger.info(f"type(gas_collection) = {type(gas_collection)}")
+    # logger.info(f"type(gas_collection.find()) = {type(gas_collection.find())}")
+    
+    cursor:Cursor = gas_collection.find(
         {},
         {"timestamp": 1, high_field: 1, medium_field: 1, low_field: 1, "_id": 0}
-    ).sort("timestamp", -1).limit(limit))
+    )
+    
+    cursor = cursor.sort("timestamp", -1).limit(limit)
+
+    history = list(cursor)
 
     formatted_history = []
     for doc in history:
