@@ -16,6 +16,22 @@ const Historical: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  
+  // Helper function to get the unit for the Y-axis label
+  const getGasUnit = () => {
+    switch (network) {
+      case 'ethereum':
+        return 'Gwei';
+      case 'bitcoin':
+        return 'sat/vB';
+      case 'solana':
+        return 'SOL';
+      default:
+        return 'Gas Price';
+    }
+  };
+
+  // Retrieve Historical data
   useEffect(() => {
     const fetchData = async () => {
       if (!network) return;
@@ -40,15 +56,6 @@ const Historical: React.FC = () => {
   }, [network]);
 
   // Format data for the chart
-  console.log(historicalData.filter(item => {
-    const itemDate = new Date(item.date);
-    const today = new Date();
-    return (
-      itemDate.getDate() === today.getDate() &&
-      itemDate.getMonth() === today.getMonth() &&
-      itemDate.getFullYear() === today.getFullYear()
-    );
-  }))
   const chartData = historicalData
     .filter(item => {
       const itemDate = new Date(item.date);
@@ -143,15 +150,46 @@ const Historical: React.FC = () => {
                   />
                   <YAxis 
                     tick={{ fontSize: 10 }} 
+                    tickFormatter={(value) => Math.abs(value) < 0.001 ? value.toExponential(2) : value.toFixed(2) }
                     label={{ 
-                      value: 'Gas Price (Gwei)', 
+                      value: `Gas Price (${getGasUnit()})`, 
                       angle: -90, 
                       position: 'insideLeft',
                       style: { textAnchor: 'middle', fontSize: 12 }
                     }} 
                   />
                   <ChartTooltip 
-                    content={<ChartTooltipContent />} 
+                    content={({ payload, label }) => {
+                      if (!payload || payload.length === 0) return null;
+
+                      return (
+                        <div className="bg-background/90 backdrop-blur-sm p-3 rounded-lg border border-white/10 shadow-lg">
+                          <p className="text-sm font-medium text-muted-foreground mb-1">
+                            {label}
+                          </p>
+                          {payload.map((entry, index) => {
+                            const value = entry.value as number;
+                            const formattedValue = Math.abs(value) < 0.001 
+                              ? value.toExponential(2) 
+                              : value.toFixed(2);
+                            return (
+                              <div key={`tooltip-${index}`} className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="h-3 w-3 rounded-full" 
+                                    style={{ backgroundColor: entry.color }} 
+                                  />
+                                  <span className="text-sm capitalize">{entry.name}</span>
+                                </div>
+                                <span className="text-sm font-semibold">
+                                  {formattedValue} {getGasUnit()}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    }} 
                   />
                   <Line 
                     type="monotone" 

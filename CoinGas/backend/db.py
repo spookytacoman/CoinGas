@@ -76,9 +76,12 @@ def get_gas_collection():
             gas_collection.find_one()
             logger.info(f"✅ Connected to MongoDB collection: {mongo_collection}")
             
+            
         except Exception as e:
             logger.error(f"❌ MongoDB collection error: {e}")
             # return MockCollection()
+            
+        cleanup_old_data()
     
     return gas_collection
 
@@ -130,6 +133,24 @@ class MockCollection:
             list: The documents
         """
         return self.data
+    
+def cleanup_old_data():
+    """
+    Remove data from MongoDB that isn't from the current day.
+    """
+    try:
+        global gas_collection
+        
+        # Calculate the start of the current day in UTC
+        from datetime import datetime, timedelta
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # Delete documents older than today
+        result = gas_collection.delete_many({"timestamp": {"$lt": today.isoformat()}})
+        logger.info(f"🧹 Cleaned up {result.deleted_count} old documents")
+        
+    except Exception as e:
+        logger.error(f"❌ Cleanup error: {e}")
 
 # Initialize the gas collection
 gas_collection = get_gas_collection()
