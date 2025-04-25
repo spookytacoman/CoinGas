@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchHistoricalGasData } from '@/services/historicalGasService';
@@ -41,12 +40,31 @@ const Historical: React.FC = () => {
   }, [network]);
 
   // Format data for the chart
-  const chartData = historicalData.map(item => ({
-    date: format(new Date(item.date), 'MMM dd'),
-    low: item.low,
-    medium: item.medium,
-    high: item.high,
-  }));
+  console.log(historicalData.filter(item => {
+    const itemDate = new Date(item.date);
+    const today = new Date();
+    return (
+      itemDate.getDate() === today.getDate() &&
+      itemDate.getMonth() === today.getMonth() &&
+      itemDate.getFullYear() === today.getFullYear()
+    );
+  }))
+  const chartData = historicalData
+    .filter(item => {
+      const itemDate = new Date(item.date);
+      const today = new Date();
+      return (
+        itemDate.getDate() === today.getDate() &&
+        itemDate.getMonth() === today.getMonth() &&
+        itemDate.getFullYear() === today.getFullYear()
+      );
+    })
+    .map(item => ({
+      date: format(new Date(item.date), 'HH:mm'),
+      low: item.low,
+      medium: item.medium,
+      high: item.high,
+    })).reverse();
 
   // Get network name with first letter capitalized
   const networkName = network ? network.charAt(0).toUpperCase() + network.slice(1) : '';
@@ -91,8 +109,8 @@ const Historical: React.FC = () => {
 
       {!loading && !error && historicalData.length > 0 && (
         <div className="mt-6 rounded-lg border border-white/10 p-6 backdrop-blur-sm">
-          <h2 className="text-xl font-semibold mb-4">30-Day Gas Fee History</h2>
-          <div className="h-[400px] w-full">
+          <h2 className="text-xl font-semibold mb-4">24-Hour Gas Fee History</h2>
+          <div className="h-[400px] h-full min-w-0 overflow-hidden">
             <ChartContainer
               config={{
                 low: { 
@@ -109,57 +127,68 @@ const Historical: React.FC = () => {
                 }
               }}
             >
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12 }} 
-                />
-                <YAxis 
-                  tick={{ fontSize: 12 }} 
-                  label={{ 
-                    value: 'Gas Price (Gwei)', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { textAnchor: 'middle' }
-                  }} 
-                />
-                <ChartTooltip 
-                  content={<ChartTooltipContent />} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="low" 
-                  name="Low"
-                  stroke="#10b981" 
-                  strokeWidth={2} 
-                  dot={{ r: 3 }} 
-                  activeDot={{ r: 5 }} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="medium" 
-                  name="Medium"
-                  stroke="#f59e0b" 
-                  strokeWidth={2} 
-                  dot={{ r: 3 }} 
-                  activeDot={{ r: 5 }} 
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="high" 
-                  name="High"
-                  stroke="#ef4444" 
-                  strokeWidth={2} 
-                  dot={{ r: 3 }} 
-                  activeDot={{ r: 5 }} 
-                />
-                <Legend />
-              </LineChart>
+              <ResponsiveContainer width="100%" height="100%" debounce={1}>
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 40, bottom: 30 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 10 }}
+                    interval={Math.ceil(chartData.length / 6)}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10 }} 
+                    label={{ 
+                      value: 'Gas Price (Gwei)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle', fontSize: 12 }
+                    }} 
+                  />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="low" 
+                    name="Low"
+                    stroke="#10b981" 
+                    strokeWidth={2} 
+                    dot={{ r: 2 }} 
+                    activeDot={{ r: 4 }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="medium" 
+                    name="Medium"
+                    stroke="#f59e0b" 
+                    strokeWidth={2} 
+                    dot={{ r: 2 }} 
+                    activeDot={{ r: 4 }} 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="high" 
+                    name="High"
+                    stroke="#ef4444" 
+                    strokeWidth={2} 
+                    dot={{ r: 2 }} 
+                    activeDot={{ r: 4 }} 
+                  />
+                  <Legend 
+                    wrapperStyle={{ paddingTop: '20px' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             </ChartContainer>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Note: This chart shows the historical gas fee trends for {networkName} over the past 30 days.
+            Note: This chart shows the historical gas fee trends for {networkName} over the past 24 hours.
             Lower values indicate cheaper transaction costs.
           </p>
         </div>
