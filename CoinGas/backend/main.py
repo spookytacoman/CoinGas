@@ -25,11 +25,13 @@ from datetime import datetime, timedelta
 # from pymongo.synchronous.cursor import Cursor
 import asyncio
 import logging
+import json
 
 # === Local modules ===
 from .db import gas_collection
 from .scheduler.collect import fetch_gas_fees as collector
 from .historical import router as historical_router
+from .prediction import predict_tomorrow
 
 # === Logging setup ===
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -70,12 +72,29 @@ async def websocket_endpoint(websocket: WebSocket):
         
         while True:
             try:
-                # Wait for either data to be available or a ping message
                 try:
+                    # Wait for either data to be available or a ping message
                     data = await asyncio.wait_for(websocket.receive_text(), timeout=1.0)
                     if data == "ping":
                         await websocket.send_text("pong")
                         continue
+                    
+                    # Handle prediction request
+                    try:
+                        logger.info(f"Trying to json interpret {data}")
+                        message = json.loads(data)
+                        if message.get("action") == "predict":
+                            network = message.get("network")
+                            # Call Gemini API to predict tomorrow's data
+                            prediction = predict_tomorrow(network)
+                            await websocket.send_json({
+                                "action": "prediction",
+                                "data": prediction
+                            })
+                            continue
+                    except json.JSONDecodeError:
+                        pass
+                
                 except asyncio.TimeoutError:
                     # No message received, check if it's time to send an update
                     pass

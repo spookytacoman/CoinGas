@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchHistoricalGasData } from '@/services/historicalGasService';
+import { fetchHistoricalGasData, predictTomorrowGas } from '@/services/historicalGasService';
 import { HistoricalGasData } from '@/types/gas';
 import { toast } from 'sonner';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -13,8 +13,10 @@ const Historical: React.FC = () => {
   const { network } = useParams<{ network: string }>();
   const navigate = useNavigate();
   const [historicalData, setHistoricalData] = useState<HistoricalGasData[]>([]);
+  const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPredicted, setIsPredicted] = useState(false);
 
   
   // Helper function to get the unit for the Y-axis label
@@ -31,6 +33,78 @@ const Historical: React.FC = () => {
     }
   };
 
+  // Handle prediction request
+  const handlePredictTomorrow = async () => {
+    if (!network) return;
+    try {
+      setLoading(true);
+      const prediction = await predictTomorrowGas(network);
+      console.log("Raw prediction data:", prediction); // Debug log
+
+      if (!prediction || !Array.isArray(prediction)) {
+        toast.error("Invalid prediction data received");
+        return;
+      }
+
+      const mappedData = prediction.map((item) => {
+        // Use `timestamp` if `date` is missing
+        const dateStr = item.date || item.timestamp;
+        const date = dateStr ? new Date(dateStr) : new Date();
+
+        if (isNaN(date.getTime())) {
+          console.error("Invalid date:", dateStr);
+          return {
+            date: "00:00", // Fallback
+            low: item.low || 0,
+            medium: item.medium || 0,
+            high: item.high || 0,
+          };
+        }
+
+        return {
+          date: format(date, "HH:mm"),
+          low: item.low || 0,
+          medium: item.medium || 0,
+          high: item.high || 0,
+        };
+      });
+
+      console.log("Mapped chart data:", mappedData); // Debug log
+      setChartData(mappedData);
+      setIsPredicted(true);
+      toast.success("Prediction loaded successfully");
+    } catch (err) {
+      console.error("Prediction failed:", err);
+      toast.error("Failed to load prediction");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Revert to original data
+  const handleRevert = () => {
+    setChartData(
+      historicalData
+        .filter((item) => {
+          const itemDate = new Date(item.date);
+          const today = new Date();
+          return (
+            itemDate.getDate() === today.getDate() &&
+            itemDate.getMonth() === today.getMonth() &&
+            itemDate.getFullYear() === today.getFullYear()
+          );
+        })
+        .map((item) => ({
+          date: format(new Date(item.date), 'HH:mm'),
+          low: item.low,
+          medium: item.medium,
+          high: item.high,
+        }))
+        .reverse()
+    );
+    setIsPredicted(false);
+  };
+
   // Retrieve Historical data
   useEffect(() => {
     const fetchData = async () => {
@@ -40,12 +114,31 @@ const Historical: React.FC = () => {
         setLoading(true);
         const data = await fetchHistoricalGasData(network);
         setHistoricalData(data);
+        setChartData(
+          data
+            .filter((item) => {
+              const itemDate = new Date(item.date);
+              const today = new Date();
+              return (
+                itemDate.getDate() === today.getDate() &&
+                itemDate.getMonth() === today.getMonth() &&
+                itemDate.getFullYear() === today.getFullYear()
+              );
+            })
+            .map((item) => ({
+              date: format(new Date(item.date), 'HH:mm'),
+              low: item.low,
+              medium: item.medium,
+              high: item.high,
+            }))
+            .reverse()
+        );
         setError(null);
       } catch (err) {
         console.error(`Failed to fetch historical gas data for ${network}:`, err);
         setError(`Failed to load historical data for ${network}. Please try again later.`);
         toast.error('Could not load historical gas data', {
-          description: 'Please try refreshing the page'
+          description: 'Please try refreshing the page',
         });
       } finally {
         setLoading(false);
@@ -55,40 +148,45 @@ const Historical: React.FC = () => {
     fetchData();
   }, [network]);
 
-  // Format data for the chart
-  const chartData = historicalData
-    .filter(item => {
-      const itemDate = new Date(item.date);
-      const today = new Date();
-      return (
-        itemDate.getDate() === today.getDate() &&
-        itemDate.getMonth() === today.getMonth() &&
-        itemDate.getFullYear() === today.getFullYear()
-      );
-    })
-    .map(item => ({
-      date: format(new Date(item.date), 'HH:mm'),
-      low: item.low,
-      medium: item.medium,
-      high: item.high,
-    })).reverse();
-
   // Get network name with first letter capitalized
   const networkName = network ? network.charAt(0).toUpperCase() + network.slice(1) : '';
 
   return (
     <div className="container py-12">
-      <div className="flex items-center mb-6">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate('/')}
-          className="mr-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Dashboard
-        </Button>
-        <h1 className="text-3xl font-bold">{networkName} Historical Gas Fees</h1>
+      <div className="flex flex-col mb-6">
+        <div className="flex items-center">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate('/')}
+            className="mr-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Dashboard
+          </Button>
+          <h1 className="text-3xl font-bold">{networkName} Historical Gas Fees</h1>
+        </div>
+        <div className="mt-4">
+          {!isPredicted ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handlePredictTomorrow}
+              disabled={loading}
+            >
+              Predict Tomorrow
+            </Button>
+          ) : (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleRevert}
+              disabled={loading}
+            >
+              Revert
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading && (
@@ -114,7 +212,7 @@ const Historical: React.FC = () => {
         </div>
       )}
 
-      {!loading && !error && historicalData.length > 0 && (
+      {!loading && !error && chartData.length > 0 && (
         <div className="mt-6 rounded-lg border border-white/10 p-6 backdrop-blur-sm">
           <h2 className="text-xl font-semibold mb-4">24-Hour Gas Fee History</h2>
           <div className="h-[400px] h-full min-w-0 overflow-hidden">
